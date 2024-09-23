@@ -1,11 +1,9 @@
 import sys
 from enum import Enum, auto
 
-class InputBuffer:
-    buffer: str
-    buffer_length: int
-    input_length: int
+from db import ExecuteResult, Row, Table
 
+class InputBuffer:
     def __init__(self):
         self.buffer = ""
         self.buffer_length = 0
@@ -17,6 +15,7 @@ class MetaCommandResult(Enum):
 
 class PrepareResult(Enum):
     SUCCESS = auto()
+    SYNTAX_ERROR = auto()
     UNRECOGNIZED_STATEMENT = auto()
 
 class StatementType(Enum):
@@ -26,12 +25,43 @@ class StatementType(Enum):
 class Statement:
     def __init__(self):
         self.type = None
+        self.row_to_insert = None  # This will store the row data for the insert statement
 
-def new_input_buffer() -> InputBuffer:
-    return InputBuffer()
+def do_meta_command(input_buffer: InputBuffer, table: Table) -> MetaCommandResult:
+    if input_buffer.buffer == ".exit":
+        sys.exit(0)
+    return MetaCommandResult.UNRECOGNIZED_COMMAND
 
-def print_prompt() -> None:
-    print("slowestdbintheworld > ", end="", flush=True)
+def prepare_statement(input_buffer: InputBuffer, statement: Statement) -> PrepareResult:
+    if input_buffer.buffer.startswith("insert"):
+        parts = input_buffer.buffer.split()
+        if len(parts) < 4:
+            return PrepareResult.SYNTAX_ERROR
+        try:
+            row_id = int(parts[1])
+            username = parts[2]
+            email = parts[3]
+        except ValueError:
+            return PrepareResult.SYNTAX_ERROR
+        statement.type = StatementType.INSERT
+        statement.row_to_insert = Row(row_id, username, email)
+        return PrepareResult.SUCCESS
+    
+    if input_buffer.buffer == "select":
+        statement.type = StatementType.SELECT
+        return PrepareResult.SUCCESS
+    
+    return PrepareResult.UNRECOGNIZED_STATEMENT
+
+# DB 'virtual machine'
+def execute_statement(statement: Statement, table: Table) -> ExecuteResult:
+    if statement.type == StatementType.INSERT:
+        return table.insert_row(statement.row_to_insert)
+    elif statement.type == StatementType.SELECT:
+        return table.select_all()
+    
+    return ExecuteResult.SUCCESS
+
 
 def read_input(input_buffer: InputBuffer) -> None:
     try:
@@ -43,57 +73,47 @@ def read_input(input_buffer: InputBuffer) -> None:
         sys.exit(1)
 
 
-def do_meta_command(input_buffer: InputBuffer) -> MetaCommandResult:
-    if input_buffer.buffer == ".exit":
-        sys.exit(0)
-    else:
-        return MetaCommandResult.UNRECOGNIZED_COMMAND
-
-def prepare_statement(input_buffer: InputBuffer, statement: Statement) -> PrepareResult:
-    if input_buffer.buffer.startswith("insert"):
-        statement.type = StatementType.INSERT
-        return PrepareResult.SUCCESS
-    if input_buffer.buffer == "select":
-        statement.type = StatementType.SELECT
-        return PrepareResult.SUCCESS
-
-    return PrepareResult.UNRECOGNIZED_STATEMENT
-
-def execute_statement(statement: Statement) -> None:
-    if statement.type == StatementType.INSERT:
-        print("This is where we would do an insert.")
-    elif statement.type == StatementType.SELECT:
-        print("This is where we would do a select.")
-
-
-def eval_loop(input_buffer: InputBuffer) -> None:
-
-    # handle meta commands
-    # all commands that start with a dot are meta commands, they're not SQL statements
+def eval_loop(input_buffer: InputBuffer, table: Table) -> None:
+    # handle meta commands like ".exit"
     if input_buffer.buffer.startswith('.'):
-        meta_command_result = do_meta_command(input_buffer)
+        meta_command_result = do_meta_command(input_buffer, table)
         if meta_command_result == MetaCommandResult.SUCCESS:
             return
         elif meta_command_result == MetaCommandResult.UNRECOGNIZED_COMMAND:
             print(f"Unrecognized command '{input_buffer.buffer}'")
             return
 
+
     # handle SQL statements
+    # this part is a very simple SQL compiler
+    # in real life db the Statement would be bytecode that's passed to the db virtual machine
     statement = Statement()
     prepare_result = prepare_statement(input_buffer, statement)
-    if prepare_result == PrepareResult.SUCCESS:
-        execute_statement(statement)
-        print("Executed.")
+    
+    # abort early if the statement is not valid
+    if prepare_result == PrepareResult.SYNTAX_ERROR:
+        print("Syntax error. Could not parse statement.")
+        return
     elif prepare_result == PrepareResult.UNRECOGNIZED_STATEMENT:
         print(f"Unrecognized keyword at start of '{input_buffer.buffer}'.")
-        return
+        return 
+
+
+    # pass the statement to the db virtual machine if the statement is valid
+    execute_result = execute_statement(statement, table)
+    if execute_result == ExecuteResult.SUCCESS:
+        print("")
+    elif execute_result == ExecuteResult.TABLE_FULL:
+        print("Error: Table full.")
+
 
 def main() -> None:
-    input_buffer = new_input_buffer()
+    table = Table()
+    input_buffer = InputBuffer()
     while True:
-        print_prompt()
+        print("slowestdbintheworld > ", end="", flush=True)
         read_input(input_buffer)
-        eval_loop(input_buffer)
+        eval_loop(input_buffer, table)
 
 if __name__ == "__main__":
     main()
