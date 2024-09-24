@@ -9,6 +9,11 @@ class ExecuteResult(Enum):
     SUCCESS = auto()
     TABLE_FULL = auto()
 
+class Cursor:
+    def __init__(self, table, row_num, end_of_table):
+        self.table = table
+        self.row_num = row_num
+        self.end_of_table = end_of_table
 
 class Row:
     COLUMN_USERNAME_SIZE = 32
@@ -40,32 +45,48 @@ class Table:
     ROWS_PER_PAGE = Pager.PAGE_SIZE // ROW_SIZE
     TABLE_MAX_ROWS = ROWS_PER_PAGE * Pager.TABLE_MAX_PAGES
 
-    def __init__(self, filename):
-        self.pager = Pager(filename)
+    def __init__(self):
+        self.pager = Pager()
         self.num_rows = self.pager.file_length // self.ROW_SIZE
 
-    def row_memory_data(self, row_num) -> memoryview:
+    def table_start(self):
+        cursor = Cursor(self, 0, self.num_rows == 0)
+        return cursor
+
+    def table_end(self):
+        cursor = Cursor(self, self.num_rows, True)
+        return cursor
+
+    def cursor_value(self, cursor: Cursor):
+        row_num = cursor.row_num
         page_num = row_num // self.ROWS_PER_PAGE
         page = self.pager.get_page(page_num)
         row_offset = row_num % self.ROWS_PER_PAGE
         byte_offset = row_offset * self.ROW_SIZE
-        return memoryview(page)[byte_offset: byte_offset + self.ROW_SIZE]
+        return memoryview(page)[byte_offset:byte_offset + self.ROW_SIZE]
 
+    def cursor_advance(self, cursor: Cursor):
+        cursor.row_num += 1
+        if cursor.row_num >= self.num_rows:
+            cursor.end_of_table = True
 
     def insert_row(self, row: Row) -> ExecuteResult:
         if self.num_rows >= self.TABLE_MAX_ROWS:
             return ExecuteResult.TABLE_FULL
+        
+        cursor = self.table_end()
         row_data = row.serialize()
-        self.row_memory_data(self.num_rows)[:] = row_data
+        self.cursor_value(cursor)[:] = row_data
         self.num_rows += 1
         return ExecuteResult.SUCCESS
 
     def select_all(self):
-        for i in range(self.num_rows):
-            row_data = self.row_memory_data(i)
+        cursor = self.table_start()
+        while not cursor.end_of_table:
+            row_data = self.cursor_value(cursor)
             row = Row.deserialize(row_data)
             print(row)
-
+            self.cursor_advance(cursor)
         return ExecuteResult.SUCCESS
 
 

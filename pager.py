@@ -2,11 +2,12 @@ import os
 import sys
 
 class Pager:
+    FILENAME = "storage.slowdb"
     PAGE_SIZE = 4096
     TABLE_MAX_PAGES = 100
 
-    def __init__(self, filename: str):
-        self.file_descriptor = os.open(filename, os.O_RDWR | os.O_CREAT)
+    def __init__(self):
+        self.file_descriptor = os.open(self.FILENAME, os.O_RDWR | os.O_CREAT)
         self.file_length = os.lseek(self.file_descriptor, 0, os.SEEK_END)
         self.pages = [None] * self.TABLE_MAX_PAGES
 

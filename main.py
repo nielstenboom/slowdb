@@ -109,12 +109,7 @@ def eval_loop(input_buffer: InputBuffer, table: Table) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        print("Must supply a database filename.")
-        sys.exit(1)
-
-    filename = sys.argv[1]
-    table = Table(filename)
+    table = Table()
     input_buffer = InputBuffer()
     while True:
         print("slowestdbintheworld > ", end="", flush=True)
