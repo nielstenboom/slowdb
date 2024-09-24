@@ -1,7 +1,7 @@
 import sys
 from enum import Enum, auto
 
-from db import ExecuteResult, Row, Table
+from db import ExecuteResult, Row, Table, db_close
 
 class InputBuffer:
     def __init__(self):
@@ -29,6 +29,7 @@ class Statement:
 
 def do_meta_command(input_buffer: InputBuffer, table: Table) -> MetaCommandResult:
     if input_buffer.buffer == ".exit":
+        db_close(table)
         sys.exit(0)
     return MetaCommandResult.UNRECOGNIZED_COMMAND
 
@@ -108,7 +109,12 @@ def eval_loop(input_buffer: InputBuffer, table: Table) -> None:
 
 
 def main() -> None:
-    table = Table()
+    if len(sys.argv) < 2:
+        print("Must supply a database filename.")
+        sys.exit(1)
+
+    filename = sys.argv[1]
+    table = Table(filename)
     input_buffer = InputBuffer()
     while True:
         print("slowestdbintheworld > ", end="", flush=True)
