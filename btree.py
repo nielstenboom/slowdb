@@ -142,11 +142,11 @@ class BTree:
             return self.search(key, node.children[i])
 
     def print_tree(self):
-        self._print_tree(self.root, 0)
+        self._print_tree(self.root, "ROOT")
 
     def _print_tree(self, node, direction, indent=""):
         print(f"{indent}{direction}:", end=" ")
-        print(" ".join(map(str, node.values)))
+        print(" ".join([str(x.row) for x in node.values]))
         if len(node.children) > 0:
             for i, child in enumerate(node.children):
                 child_direction = 'L' if i == 0 else 'M' if i < len(node.children) - 1 else 'R'

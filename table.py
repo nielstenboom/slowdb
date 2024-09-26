@@ -27,7 +27,7 @@ class Table:
     def __init__(self, filename=FILENAME):
         self.pager = Pager(filename)
         self.num_rows = 0
-        self.btree = BTree(3)
+        self.btree = BTree(2)
         self.load_btree()
 
     def table_start(self):

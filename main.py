@@ -107,9 +107,9 @@ def eval_loop(input_buffer: InputBuffer, table: Table) -> None:
     # pass the statement to the db virtual machine if the statement is valid
     execute_result = execute_statement(statement, table)
     if execute_result == ExecuteResult.SUCCESS:
-        print("")
+        print("✅")
     elif execute_result == ExecuteResult.TABLE_FULL:
-        print("Error: Table full.")
+        print("❌ Error: Table full.")
 
 
 def main() -> None:
