@@ -1,7 +1,7 @@
 import sys
 from enum import Enum, auto
 
-from db import ExecuteResult, Row, Table, db_close
+from table import ExecuteResult, Row, Table, db_close
 
 class InputBuffer:
     def __init__(self):
@@ -31,6 +31,10 @@ def do_meta_command(input_buffer: InputBuffer, table: Table) -> MetaCommandResul
     if input_buffer.buffer == ".exit":
         db_close(table)
         sys.exit(0)
+    elif input_buffer.buffer == ".btree":
+        print("Tree structure:")
+        table.btree.print_tree()
+        return MetaCommandResult.SUCCESS
     return MetaCommandResult.UNRECOGNIZED_COMMAND
 
 def prepare_statement(input_buffer: InputBuffer, statement: Statement) -> PrepareResult:
