@@ -1,10 +1,13 @@
-# Slowest Database in the world
+# Slowdb™
 
 Following 
 
 https://cstack.github.io/db_tutorial/parts/part2.html
 
 converting it to Python for learning
+
+> [!WARNING]  
+> DO NOT USE IN PRODUCTION!
 
 ## Use it
 
@@ -32,4 +35,3 @@ slowdb™ > select
 slowdb™ > insert 11 test test@test.com
 ✅
 ```
-
