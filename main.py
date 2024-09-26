@@ -116,7 +116,7 @@ def main() -> None:
     table = Table()
     input_buffer = InputBuffer()
     while True:
-        print("slowestdbintheworld > ", end="", flush=True)
+        print("slowdb™ > ", end="", flush=True)
         read_input(input_buffer)
         eval_loop(input_buffer, table)
 
