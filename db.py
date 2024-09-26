@@ -2,6 +2,7 @@ from enum import Enum, auto
 import os
 import struct
 
+from constants import FILENAME
 from pager import Pager
 
 
@@ -45,9 +46,9 @@ class Table:
     ROWS_PER_PAGE = Pager.PAGE_SIZE // ROW_SIZE
     TABLE_MAX_ROWS = ROWS_PER_PAGE * Pager.TABLE_MAX_PAGES
 
-    def __init__(self):
-        self.pager = Pager()
-        self.num_rows = self.pager.file_length // self.ROW_SIZE
+    def __init__(self, filename=FILENAME):
+        self.pager = Pager(filename)
+        self.num_rows = 0
 
     def table_start(self):
         cursor = Cursor(self, 0, self.num_rows == 0)
@@ -91,24 +92,4 @@ class Table:
 
 
 def db_close(table: Table):
-    pager = table.pager
-    num_full_pages = table.num_rows // table.ROWS_PER_PAGE
-
-    for i in range(num_full_pages):
-        if pager.pages[i] is None:
-            continue
-
-        pager.flush(i, Pager.PAGE_SIZE)
-        pager.pages[i] = None
-
-    num_additional_rows = table.num_rows % table.ROWS_PER_PAGE
-    if num_additional_rows > 0:
-        page_num = num_full_pages
-        if pager.pages[page_num] is not None:
-            pager.flush(page_num, num_additional_rows * table.ROW_SIZE)
-            pager.pages[page_num] = None
-
-    os.close(pager.file_descriptor)
-
-    for i in range(Pager.TABLE_MAX_PAGES):
-        pager.pages[i] = None
+    os.close(table.pager.file_descriptor)
